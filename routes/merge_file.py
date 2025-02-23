@@ -5,7 +5,7 @@
 # packages -------------------------------------------------------------------
 from flask          import Flask, send_from_directory, render_template, request
 from flask          import send_file, redirect, url_for, Blueprint
-from flask          import session, jsonify
+from flask          import session, jsonify, flash
 #from flask_session  import Session
 from werkzeug.utils import secure_filename
 import sqlite3
@@ -27,12 +27,14 @@ def upload_template():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
+            flash("No file selected", "danger")
             return redirect(request.url)
         # grab the file
         file = request.files['file']
 
         # if filename is empty re-direct
-        if file.filename == '':
+        if file.filename == '': 
+            flash("No file selected", "danger")
             return redirect(request.url)
         
         # if file is valid, read the file contents
@@ -42,6 +44,7 @@ def upload_template():
             dh.process_docx(file.read())
 
         if dh.valid_placeholders:
+            session['template_id'] = dh.template_id
             return redirect(url_for("merge_file.set_placeholder_type",
                             template_id=dh.template_id
                             ))
@@ -51,28 +54,114 @@ def upload_template():
                             version=AppConfig.VERSION.value,
                             )
 
-@merge_blueprint.route('/set_placeholder_type/<int:template_id>', methods=['GET', 'POST'])
-def set_placeholder_type(template_id:int):
-    """Set the type (inline, list, bullet) for each placeholder."""
+# @merge_blueprint.route('/set_template', methods=['GET','POST'])
+# def set_template():
+#     template_id = request.form.get('template_id')
 
+#     if template_id:
+#         session['template_id'] = int(template_id)  # Store in session
+#         flash("Template selected successfully!", "success")
+#         return redirect(url_for('merge_file.set_placeholder_type'))  # Redirect to the next step
+
+#     flash("Please select a template.")
+#     wf = WebFormHandler(template_id=0)
+#     return render_template("select_template.html",
+#                             templates = wf.fetch_all_templates()
+#                             )      
+
+
+# @merge_blueprint.route('/set_placeholder_type', methods=['GET', 'POST'])
+# def set_placeholder_type():
+    # """Set the type (inline, list, bullet) for each placeholder."""
+
+    # # If template_id is not in session, show list of available templates
+    # template_id = session.get('template_id',0)
+
+    # print(f"session val:: {session.get('template_id')}")
+    # print(f"var template_id val:: {template_id}")
+    # print(f"request type:: { request.method}" )
+    # if 'template_id' in session:
+    #     session.pop('template_id')
+    #     print(f"POPPED the session val:: {session.get('template_id')}")
+
+    # wf = WebFormHandler(template_id=template_id)
+
+    # if template_id == 0:
+    #     return render_template("select_template.html",
+    #                            templates = wf.fetch_all_templates()
+    #                            )   
+    
+    # print(f"request type:: { request.method}" )
+    # print(f"POST template_id val:: {template_id}")
+
+    # if request.method == 'POST' and template_id > 0:
+    #     print(f"POST template_id val:: {template_id}")
+    #     session['template_id'] = int(template_id)
+    #     # get the placeholder type
+    #     placeholders = request.form.getlist('placeholder[]')
+    #     types = request.form.getlist('replacement_type[]')
+    #     wf.process_placeholders(placeholder_data=placeholders, types=types)
+        
+    #     print(f"session val:: {session.get('template_id')}")
+        
+    #     return redirect(url_for('merge_blueprint.set_placeholder_type'))
+
+
+    # # if a get or the template_id is not set
+    # return render_template("placeholder_type.html",
+    #                     version=AppConfig.VERSION.value,
+    #                     placeholders=wf.fetch_all_placeholders(),
+    #                     template_id=template_id
+    #                     )
+
+@merge_blueprint.route('/set_placeholder_type', methods=['GET', 'POST'])
+def set_placeholder_type():
+    wf = WebFormHandler(template_id=0)
+    templates = wf.fetch_all_templates()
+
+    template_id = request.args.get('template_id') or session.get('template_id')
+    
+    if not template_id:
+        template_id = 0
+
+    session['template_id'] = template_id
+    return render_template("placeholder_type.html",
+                        version=AppConfig.VERSION.value,
+                        placeholders=wf.fetch_all_placeholders(template_id=template_id),
+                        template_id=template_id,
+                        templates=templates
+                        )
+
+
+@merge_blueprint.route('/set_template_session', methods=['POST'])
+def set_template_session():
+    """
+    Updates the session variable for the selected template_id.
+    """
+    data = request.get_json()
+    template_id = data.get("template_id")
+
+    if template_id:
+        session["template_id"] = template_id
+        return jsonify({"success": True})
+    return jsonify({"success": False}), 400
+
+
+@merge_blueprint.route('/update_placeholder_type', methods=['POST'])
+def update_placeholder_type():
+    """
+    Updates placeholder types in the database.
+    """
+    template_id = request.args.get('template_id') or session.get('template_id')
+    
+    if not template_id:
+        flash("Please select a template first.", "error")
+        return redirect(url_for('merge_file.set_placeholder_type'))
+    
     wf = WebFormHandler(template_id=template_id)
-
-    if request.method == 'POST':
-        # get the placeholder type
-        placeholders = request.form.getlist('placeholder[]')
-        types = request.form.getlist('replacement_type[]')
-        wf.process_placeholders(placeholder_data=placeholders, types=types)
-        
-
-        return redirect(url_for('base.index'))
-
-
-    if request.method == 'GET':
-        templates = wf.fetch_all_templates()
-        
-        return render_template("placeholder_type.html",
-                            version=AppConfig.VERSION.value,
-                            placeholders=wf.fetch_all_placeholders(),
-                            template_id=template_id
+    wf.process_placeholders(template_id=template_id,
+                            form_data=request.form
                             )
+    flash("Placeholder Types are updated")
+    return redirect(url_for('merge_file.set_placeholder_type'))
     

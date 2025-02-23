@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Select a Template</h2>
+<form method="POST" action="{{ url_for('merge_file.set_template') }}">
+    <label for="template_id">Choose a template:</label>
+    <select name="template_id" id="template_id" class="form-control">
+        {% for template in templates %}
+            <option value="{{ template.template_id }}">{{ template.template_name }}</option>
+        {% endfor %}
+    </select>
+    <br>
+    <button type="submit" class="btn btn-primary">Select Template</button>
+</form>
+{% endblock %}

@@ -26,7 +26,7 @@
             
             <h5>Edit</h5>
             <a href="{{ url_for('merge_file.upload_template') }}">Upload Template</a>
-            <a href="{{ url_for('merge_file.upload_template') }}">Edit Template Placeholder</a>
+            <a href="{{ url_for('merge_file.set_placeholder_type') }}">Edit Template Placeholder</a>
 
         </nav>
 
@@ -44,7 +44,13 @@
         </div>
         <!-- Right Column: Summary Information -->
         <aside class="right-column">
-            {% block right %}{% endblock %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
         </aside>
     </div>
     {% block scriptfooter %}{% endblock %}

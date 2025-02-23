@@ -33,8 +33,7 @@ class QueryPlaceholders():
     PLACEHOLDER_UPDATE_TYPE ="""
         UPDATE placeholder
         SET placeholder_type = ?
-        WHERE template_id = ? 
-        AND placeholder_name = ?
+        WHERE placeholder_id = ?
         AND deleted = 0
         ;
         """
