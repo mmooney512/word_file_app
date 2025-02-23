@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+{% block content %}
+                <div>
+                    <h4>Set Placeholder Types for Template</h4>
+                </div>
+                <div>
+                    <form method="POST">
+                        <table border="1">
+                            <thead>
+                                <tr>
+                                    <th>Placeholder</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for placeholder in placeholders %}
+                                <tr>
+                                    <td>{{ placeholder['placeholder_name'] }}</td>
+                                    <td>
+                                        <select name="replacement_type[]">
+                                            <option value="" {% if not placeholder['placeholder_type'] %}selected{% endif %}>Select Type</option>
+                                            <option value="inline" {% if placeholder['placeholder_type'] == 'inline' %}selected{% endif %}>Inline</option>
+                                            <option value="list" {% if placeholder['placeholder_type'] == 'list' %}selected{% endif %}>List</option>
+                                            <option value="bullet" {% if placeholder['placeholder_type'] == 'bullet' %}selected{% endif %}>Bullet List</option>
+                                        </select>
+                                        <input type="hidden" name="placeholder_id" value="{{ placeholder['placeholder_id'] }}">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="submit">Save Placeholder Types</button>
+                    </form>
+                </div>
+{% endblock %}
